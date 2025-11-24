@@ -393,7 +393,14 @@
         </button>
         
         <div class="flex justify-between items-center mb-3">
-            <h2 id="detail-title"></h2>
+            <div style="flex: 1; display: flex; align-items: center; gap: 0.5rem;">
+                <h2 id="detail-title"></h2>
+                <button class="icon-btn" onclick="editTitle()" title="Editar título" style="padding: 0.25rem;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </button>
+            </div>
             <div class="flex gap-2">
                 <button class="icon-btn" onclick="shareOnWhatsApp()">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -414,7 +421,17 @@
             <div id="detail-duration"></div>
         </div>
         
-        <div id="detail-tags" class="mb-4"></div>
+        <div class="mb-4">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span class="text-sm text-gray">Tags:</span>
+                <button class="icon-btn" onclick="editTags()" title="Editar tags" style="padding: 0.25rem;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="detail-tags"></div>
+        </div>
         
         <div class="card">
             <h3>Áudio da Reunião</h3>
@@ -860,7 +877,7 @@
                     <span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; display: inline-block; margin-right: 0.5rem;">${tag}</span>
                 `).join('');
             } else {
-                tagsContainer.innerHTML = '';
+                tagsContainer.innerHTML = '<span class="text-sm text-gray">Nenhuma tag</span>';
             }
             
             const audioPlayer = document.getElementById('audio-player');
@@ -1006,7 +1023,8 @@
                 formData.append('file', audioFile);
                 formData.append('model', 'whisper-large-v3');
                 formData.append('language', 'pt');
-                formData.append('response_format', 'text');
+                formData.append('response_format', 'verbose_json'); // Mudado para pegar timestamps e possível diarização
+                formData.append('timestamp_granularities[]', 'segment');
                 
                 // Fazer requisição para Whisper API da Groq
                 const whisperResponse = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -1022,8 +1040,32 @@
                     throw new Error(`Whisper API error ${whisperResponse.status}: ${errorData}`);
                 }
                 
-                // A resposta é texto direto quando response_format=text
-                const transcript = await whisperResponse.text();
+                const data = await whisperResponse.json();
+                
+                // Montar transcrição com timestamps e tentativa de identificar mudanças de speaker
+                let transcript = '';
+                let currentSpeaker = 1;
+                let lastPause = 0;
+                
+                if (data.segments && data.segments.length > 0) {
+                    data.segments.forEach((segment, index) => {
+                        // Se houve uma pausa longa (>2s), pode ser outro speaker
+                        if (index > 0 && segment.start - lastPause > 2.0) {
+                            currentSpeaker++;
+                            transcript += '\n\n';
+                        }
+                        
+                        // Adicionar timestamp e texto
+                        const minutes = Math.floor(segment.start / 60);
+                        const seconds = Math.floor(segment.start % 60);
+                        transcript += `[${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}] ${segment.text.trim()}\n`;
+                        
+                        lastPause = segment.end;
+                    });
+                } else {
+                    // Fallback para texto simples
+                    transcript = data.text || '';
+                }
                 
                 if (!transcript || transcript.trim().length < 10) {
                     throw new Error('Transcrição vazia ou muito curta. Verifique se o áudio tem fala clara.');
@@ -1040,20 +1082,23 @@
         async function generateSummaryFromTranscript(transcript) {
             const apiKey = localStorage.getItem('groq_api_key');
             
-            const prompt = `Você é um assistente especializado em resumir reuniões em português. Analise a seguinte transcrição e forneça um resumo estruturado.
+            const prompt = `Você é um assistente especializado em resumir reuniões em português do Brasil. Analise a seguinte transcrição e forneça um resumo estruturado.
 
 Transcrição:
 ${transcript}
 
-Responda APENAS com um JSON válido no seguinte formato (sem texto adicional, sem markdown, sem explicações):
+IMPORTANTE: Responda APENAS com um JSON válido (sem markdown, sem explicações, sem texto adicional).
+
+Formato esperado:
 {
-  "general": "Um parágrafo resumindo o contexto geral da reunião",
-  "points": ["Ponto principal 1", "Ponto principal 2", "Ponto principal 3"],
+  "general": "Um parágrafo de 2-3 frases resumindo o contexto geral e os tópicos principais da reunião",
+  "points": ["Ponto importante 1", "Ponto importante 2", "Ponto importante 3"],
   "decisions": ["Decisão tomada 1", "Decisão tomada 2"],
-  "actions": ["Ação/tarefa 1", "Ação/tarefa 2"]
+  "actions": ["Ação ou tarefa pendente 1", "Ação ou tarefa pendente 2"]
 }
 
-Se a transcrição estiver vazia ou incompleta, crie um resumo indicando que não foi possível capturar o áudio adequadamente.`;
+Se não houver decisões claras, coloque ["Nenhuma decisão específica registrada"].
+Se não houver ações claras, coloque ["Nenhuma ação específica registrada"].`;
 
             try {
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -1067,7 +1112,7 @@ Se a transcrição estiver vazia ou incompleta, crie um resumo indicando que nã
                         messages: [
                             {
                                 role: "system",
-                                content: "Você é um assistente especializado em resumir reuniões. Sempre responda em português do Brasil com JSON válido."
+                                content: "Você é um assistente que resume reuniões em português do Brasil. Sempre responda APENAS com JSON válido, sem markdown ou texto adicional."
                             },
                             {
                                 role: "user",
@@ -1075,33 +1120,45 @@ Se a transcrição estiver vazia ou incompleta, crie um resumo indicando que nã
                             }
                         ],
                         temperature: 0.3,
-                        max_tokens: 2000
+                        max_tokens: 2000,
+                        response_format: { type: "json_object" }
                     })
                 });
                 
                 if (!response.ok) {
                     const errorData = await response.text();
+                    console.error('Erro da API Groq:', errorData);
                     throw new Error(`API error ${response.status}: ${errorData}`);
                 }
                 
                 const data = await response.json();
                 const responseText = data.choices[0].message.content;
                 
-                // Limpar markdown se houver
-                const cleanedText = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+                console.log('Resposta da IA:', responseText);
                 
-                return JSON.parse(cleanedText);
+                // Limpar possíveis markdown
+                let cleanedText = responseText.trim();
+                cleanedText = cleanedText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+                
+                const summary = JSON.parse(cleanedText);
+                
+                // Validar estrutura
+                if (!summary.general) summary.general = "Não foi possível gerar resumo geral.";
+                if (!Array.isArray(summary.points)) summary.points = ["Veja a transcrição completa"];
+                if (!Array.isArray(summary.decisions)) summary.decisions = ["Nenhuma decisão específica registrada"];
+                if (!Array.isArray(summary.actions)) summary.actions = ["Nenhuma ação específica registrada"];
+                
+                return summary;
+                
             } catch (error) {
                 console.error('Erro ao gerar resumo:', error);
                 
-                // Se falhar, retornar estrutura básica
+                // Retornar estrutura básica em caso de erro
                 return {
-                    general: transcript.length > 50 
-                        ? "Não foi possível gerar o resumo automático, mas a transcrição está disponível abaixo."
-                        : "Não foi possível capturar áudio suficiente para gerar um resumo. Verifique se o microfone estava próximo aos participantes.",
+                    general: "Não foi possível gerar o resumo automático. A transcrição está disponível abaixo.",
                     points: ["Veja a transcrição completa abaixo"],
-                    decisions: ["Não identificado automaticamente"],
-                    actions: ["Revisar áudio manualmente"]
+                    decisions: ["Nenhuma decisão específica registrada"],
+                    actions: ["Revisar transcrição manualmente"]
                 };
             }
         }
@@ -1147,6 +1204,52 @@ Se a transcrição estiver vazia ou incompleta, crie um resumo indicando que nã
             if (confirm('Tem certeza que deseja excluir esta reunião? Esta ação não pode ser desfeita.')) {
                 await deleteMeeting(currentMeetingId);
                 showScreen('home');
+            }
+        }
+        
+        // ==================== EDITAR TÍTULO E TAGS ====================
+        async function editTitle() {
+            const meeting = await getMeeting(currentMeetingId);
+            const newTitle = prompt('Digite o novo título:', meeting.title);
+            
+            if (newTitle && newTitle.trim() !== '' && newTitle !== meeting.title) {
+                meeting.title = newTitle.trim();
+                await updateMeeting(meeting);
+                document.getElementById('detail-title').textContent = meeting.title;
+                alert('Título atualizado!');
+            }
+        }
+        
+        async function editTags() {
+            const meeting = await getMeeting(currentMeetingId);
+            const currentTags = meeting.tags || [];
+            const tagsString = currentTags.join(', ');
+            
+            const newTagsString = prompt('Edite as tags (separadas por vírgula):\n\nExemplo: operações, loja07, gestores', tagsString);
+            
+            if (newTagsString !== null) {
+                const newTags = newTagsString
+                    .split(',')
+                    .map(tag => tag.trim())
+                    .filter(tag => tag.length > 0);
+                
+                meeting.tags = newTags;
+                await updateMeeting(meeting);
+                
+                // Atualizar visualização
+                const tagsContainer = document.getElementById('detail-tags');
+                if (newTags.length > 0) {
+                    tagsContainer.innerHTML = newTags.map(tag => `
+                        <span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; display: inline-block; margin-right: 0.5rem;">${tag}</span>
+                    `).join('');
+                } else {
+                    tagsContainer.innerHTML = '<span class="text-sm text-gray">Nenhuma tag</span>';
+                }
+                
+                alert('Tags atualizadas!');
+                
+                // Atualizar filtro de tags na home
+                await renderTagFilter();
             }
         }
         
