@@ -1099,7 +1099,13 @@
             
             console.log('===== INICIANDO GERAÇÃO DE RESUMO =====');
             console.log('API Key existe?', !!apiKey);
+            console.log('API Key (primeiros 10 chars):', apiKey ? apiKey.substring(0, 10) + '...' : 'NENHUMA');
             console.log('Tamanho da transcrição:', transcript.length);
+            
+            if (!apiKey || apiKey.length < 20) {
+                alert('API Key inválida ou não configurada!\n\nClique no ícone ⚙️ para configurar.');
+                throw new Error('API Key não configurada');
+            }
             
             // Limpar timestamps da transcrição
             const cleanTranscript = transcript.replace(/\[\d{2}:\d{2}\]/g, '').trim();
@@ -1132,14 +1138,17 @@ Se não houver ações, use: ["Nenhuma ação específica registrada"]`;
                 console.log('Fazendo chamada para API Groq...');
                 
                 const requestBody = {
-                    model: "llama-3.1-70b-versatile",
+                    model: "mixtral-8x7b-32768",
                     messages: [
                         { role: "system", content: systemMsg },
                         { role: "user", content: userMsg }
                     ],
-                    temperature: 0.3,
-                    max_tokens: 1500
+                    temperature: 0.5,
+                    max_tokens: 1024
                 };
+                
+                console.log('Modelo:', requestBody.model);
+                console.log('Max tokens:', requestBody.max_tokens);
                 
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
@@ -1154,8 +1163,25 @@ Se não houver ações, use: ["Nenhuma ação específica registrada"]`;
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('ERRO da API:', errorText);
-                    throw new Error(`API retornou status ${response.status}`);
+                    console.error('ERRO da API:');
+                    console.error('Status:', response.status);
+                    console.error('Texto completo:', errorText);
+                    
+                    let errorMsg = `API retornou status ${response.status}`;
+                    
+                    if (response.status === 400) {
+                        errorMsg = 'Requisição inválida (400). Possíveis causas:\n';
+                        errorMsg += '- API Key pode estar incorreta\n';
+                        errorMsg += '- Modelo pode não existir\n';
+                        errorMsg += '- Formato da requisição inválido\n\n';
+                        errorMsg += 'Detalhes: ' + errorText.substring(0, 200);
+                    } else if (response.status === 401) {
+                        errorMsg = 'API Key inválida (401). Reconfigure no ícone ⚙️';
+                    } else if (response.status === 429) {
+                        errorMsg = 'Limite de requisições atingido (429). Aguarde alguns minutos.';
+                    }
+                    
+                    throw new Error(errorMsg);
                 }
                 
                 const data = await response.json();
