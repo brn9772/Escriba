@@ -1187,8 +1187,8 @@
         
         // ==================== IA ====================
         
-        // Dividir áudio em chunks temporais (20 minutos cada) usando Web Audio API
-        async function splitAudioByDuration(audioBase64, chunkMinutes = 20) {
+        // Dividir áudio em chunks temporais (10 minutos cada, 16kHz) usando Web Audio API
+        async function splitAudioByDuration(audioBase64, chunkMinutes = 10) {
             try {
                 console.log('=== DIVIDINDO ÁUDIO POR TEMPO ===');
                 console.log('Duração de cada chunk:', chunkMinutes, 'minutos');
@@ -1199,9 +1199,9 @@
                 
                 console.log('Tamanho do arquivo original:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
                 
-                // Se arquivo for menor que 20MB, não precisa dividir
-                if (blob.size < 20 * 1024 * 1024) {
-                    console.log('Arquivo menor que 20MB, não precisa dividir');
+                // Se arquivo for menor que 8MB, não precisa dividir
+                if (blob.size < 8 * 1024 * 1024) {
+                    console.log('Arquivo menor que 8MB, não precisa dividir');
                     return [audioBase64];
                 }
                 
@@ -1228,31 +1228,48 @@
                 
                 const chunks = [];
                 
-                // Criar cada chunk
+                // Criar cada chunk com sample rate reduzido
                 for (let i = 0; i < numberOfChunks; i++) {
                     const startTime = i * chunkDuration;
                     const endTime = Math.min((i + 1) * chunkDuration, totalDuration);
                     
                     console.log(`Criando chunk ${i + 1}/${numberOfChunks}: ${(startTime/60).toFixed(1)}min - ${(endTime/60).toFixed(1)}min`);
                     
-                    // Criar buffer para este chunk
+                    // Criar buffer para este chunk COM SAMPLE RATE REDUZIDO
                     const startSample = Math.floor(startTime * audioBuffer.sampleRate);
                     const endSample = Math.floor(endTime * audioBuffer.sampleRate);
-                    const chunkLength = endSample - startSample;
+                    const originalLength = endSample - startSample;
+                    
+                    // Sample rate reduzido para 16kHz (suficiente para voz)
+                    const targetSampleRate = 16000;
+                    const resampleRatio = targetSampleRate / audioBuffer.sampleRate;
+                    const resampledLength = Math.floor(originalLength * resampleRatio);
                     
                     const chunkBuffer = audioContext.createBuffer(
-                        audioBuffer.numberOfChannels,
-                        chunkLength,
-                        audioBuffer.sampleRate
+                        1, // Mono (reduz pela metade se original for stereo)
+                        resampledLength,
+                        targetSampleRate
                     );
                     
-                    // Copiar samples do áudio original
-                    for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-                        const sourceData = audioBuffer.getChannelData(channel);
-                        const chunkData = chunkBuffer.getChannelData(channel);
-                        
-                        for (let j = 0; j < chunkLength; j++) {
-                            chunkData[j] = sourceData[startSample + j];
+                    // Resample e copiar samples (com downsampling simples)
+                    const sourceChannel = audioBuffer.getChannelData(0); // Pega primeiro canal
+                    const chunkData = chunkBuffer.getChannelData(0);
+                    
+                    for (let j = 0; j < resampledLength; j++) {
+                        const sourceIndex = Math.floor(j / resampleRatio) + startSample;
+                        if (sourceIndex < endSample && sourceIndex < sourceChannel.length) {
+                            chunkData[j] = sourceChannel[sourceIndex];
+                        }
+                    }
+                    
+                    // Se original for stereo, fazer mix para mono
+                    if (audioBuffer.numberOfChannels > 1) {
+                        const sourceChannel2 = audioBuffer.getChannelData(1);
+                        for (let j = 0; j < resampledLength; j++) {
+                            const sourceIndex = Math.floor(j / resampleRatio) + startSample;
+                            if (sourceIndex < endSample && sourceIndex < sourceChannel2.length) {
+                                chunkData[j] = (chunkData[j] + sourceChannel2[sourceIndex]) / 2;
+                            }
                         }
                     }
                     
@@ -1362,9 +1379,9 @@
                 console.log('=== INICIANDO GERAÇÃO DE RESUMO ===');
                 console.log('ID da reunião:', currentMeetingId);
                 
-                // Dividir áudio em chunks de 20 minutos
+                // Dividir áudio em chunks de 10 minutos (16kHz para reduzir tamanho)
                 console.log('Passo 1: Dividindo áudio...');
-                const audioChunks = await splitAudioByDuration(meeting.audio, 20);
+                const audioChunks = await splitAudioByDuration(meeting.audio, 10);
                 console.log('Áudio dividido em', audioChunks.length, 'chunks');
                 
                 // Transcrever cada chunk
