@@ -332,8 +332,8 @@
             <div id="tag-filter-chips"></div>
         </div>
         
-        <button class="btn btn-primary mb-4" onclick="showRecordingScreen()">
-            + Nova Gravação
+        <button class="btn btn-primary mb-4" onclick="showUploadScreen()">
+            + Adicionar Áudio
         </button>
         
         <div id="meetings-list"></div>
@@ -347,7 +347,7 @@
         </div>
     </div>
     
-    <!-- Tela de Gravação -->
+    <!-- Tela de Upload -->
     <div id="recording-screen" class="container hidden">
         <button class="back-btn" onclick="backToHome()">
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,25 +356,9 @@
             Voltar
         </button>
         
-        <!-- Escolha entre gravar ou upload -->
-        <div id="recording-mode-selector" class="card">
-            <h2 class="mb-3">Como deseja adicionar o áudio?</h2>
-            <button class="btn btn-danger mb-2" onclick="selectRecordingMode()">
-                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-                </svg>
-                Gravar Agora
-            </button>
-            <button class="btn btn-primary" onclick="selectUploadMode()">
-                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
-                Fazer Upload de Áudio
-            </button>
-        </div>
-        
-        <!-- Formulário de gravação/upload -->
-        <div id="recording-form" class="card hidden">
+        <div class="card">
+            <h2 class="mb-3">Adicionar Áudio</h2>
+            
             <input type="text" id="meeting-title" class="input" placeholder="Título da reunião">
             
             <label class="text-sm text-gray">Tags (opcional)</label>
@@ -384,39 +368,21 @@
             <!-- Input para upload de arquivo (oculto) -->
             <input type="file" id="audio-upload" accept="audio/*" style="display: none;" onchange="handleAudioUpload(event)">
             
-            <div id="upload-section" class="hidden">
-                <button class="btn btn-primary mb-3" onclick="document.getElementById('audio-upload').click()">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                    </svg>
-                    Selecionar Arquivo de Áudio
-                </button>
-                <div id="upload-info" class="hidden" style="background: #f0fdf4; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                    <p class="text-sm" style="color: #166534; font-weight: 600;" id="upload-filename"></p>
-                    <p class="text-sm" style="color: #166534;" id="upload-filesize"></p>
-                </div>
-                <button id="save-upload" class="btn btn-primary hidden" onclick="saveUploadedAudio()">
-                    Salvar Reunião
-                </button>
+            <button class="btn btn-primary mb-3" onclick="document.getElementById('audio-upload').click()">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                Selecionar Arquivo de Áudio
+            </button>
+            
+            <div id="upload-info" class="hidden" style="background: #f0fdf4; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                <p class="text-sm" style="color: #166534; font-weight: 600;" id="upload-filename"></p>
+                <p class="text-sm" style="color: #166534;" id="upload-filesize"></p>
             </div>
             
-            <div id="recording-section" class="hidden" style="text-align: center;">
-                <div id="recording-indicator" class="hidden mb-3">
-                    <span class="recording-indicator">
-                        <span class="recording-dot recording-pulse"></span>
-                        Gravando
-                    </span>
-                </div>
-                <div id="timer" class="timer">00:00:00</div>
-                <p id="recording-date" class="text-sm text-gray"></p>
-                
-                <button id="start-recording" class="btn btn-danger mt-4" onclick="startRecording()">
-                    Iniciar Gravação
-                </button>
-                <button id="stop-recording" class="btn btn-dark mt-4 hidden" onclick="stopRecording()">
-                    Parar Gravação
-                </button>
-            </div>
+            <button id="save-upload" class="btn btn-primary hidden" onclick="saveUploadedAudio()">
+                Salvar Reunião
+            </button>
         </div>
     </div>
     
@@ -533,15 +499,10 @@
         // Estado da aplicação
         let db;
         let currentScreen = 'home';
-        let isRecording = false;
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let startTime = null;
-        let timerInterval = null;
         let currentMeetingId = null;
         let selectedTags = [];
         let filterTag = null;
-        let uploadedAudioBlob = null; // Para armazenar áudio do upload
+        let uploadedAudioBlob = null;
         
         // ==================== INDEXEDDB ====================
         function initDB() {
@@ -668,37 +629,29 @@
             if (screen === 'home') loadMeetings();
         }
         
-        function showRecordingScreen() {
+        function showUploadScreen() {
             // Resetar estado
             uploadedAudioBlob = null;
             document.getElementById('meeting-title').value = '';
+            document.getElementById('audio-upload').value = '';
+            document.getElementById('upload-info').classList.add('hidden');
+            document.getElementById('save-upload').classList.add('hidden');
             selectedTags = [];
             renderSelectedTags();
-            resetTimer();
-            
-            // Mostrar seletor de modo
-            document.getElementById('recording-mode-selector').classList.remove('hidden');
-            document.getElementById('recording-form').classList.add('hidden');
             
             showScreen('recording');
         }
         
-        function selectRecordingMode() {
-            // Ocultar seletor e mostrar formulário de gravação
-            document.getElementById('recording-mode-selector').classList.add('hidden');
-            document.getElementById('recording-form').classList.remove('hidden');
-            document.getElementById('recording-section').classList.remove('hidden');
-            document.getElementById('upload-section').classList.add('hidden');
+        function backToHome() {
+            uploadedAudioBlob = null;
+            showScreen('home');
         }
         
-        function selectUploadMode() {
-            // Ocultar seletor e mostrar formulário de upload
-            document.getElementById('recording-mode-selector').classList.add('hidden');
-            document.getElementById('recording-form').classList.remove('hidden');
-            document.getElementById('upload-section').classList.remove('hidden');
-            document.getElementById('recording-section').classList.add('hidden');
+        function backToList() {
+            showScreen('home');
         }
         
+        // ==================== UPLOAD ====================
         async function handleAudioUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -729,11 +682,19 @@
             
             const title = document.getElementById('meeting-title').value || 'Reunião sem título';
             
-            // Converter blob para base64
-            const reader = new FileReader();
-            reader.readAsDataURL(uploadedAudioBlob);
-            reader.onloadend = async () => {
-                const audioBase64 = reader.result;
+            console.log('Salvando áudio:', title);
+            console.log('Blob:', uploadedAudioBlob);
+            
+            // Mostrar loading
+            const saveBtn = document.getElementById('save-upload');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Salvando...';
+            
+            try {
+                // Converter blob para base64
+                const audioBase64 = await blobToBase64(uploadedAudioBlob);
+                
+                console.log('Base64 gerado, tamanho:', audioBase64.length);
                 
                 // Obter duração do áudio (se possível)
                 let duration = 0;
@@ -743,8 +704,9 @@
                     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
                     duration = audioBuffer.duration * 1000; // converter para ms
                     await audioContext.close();
+                    console.log('Duração detectada:', duration / 1000, 'segundos');
                 } catch (error) {
-                    console.log('Não foi possível detectar duração do áudio:', error);
+                    console.log('Não foi possível detectar duração, usando estimativa');
                     // Usar tamanho do arquivo como estimativa aproximada (assumindo ~1MB por minuto)
                     duration = (uploadedAudioBlob.size / 1024 / 1024) * 60 * 1000;
                 }
@@ -759,7 +721,9 @@
                     transcript: null
                 };
                 
+                console.log('Salvando no banco...');
                 await saveMeeting(meeting);
+                console.log('Salvo com sucesso!');
                 
                 // Resetar formulário
                 document.getElementById('meeting-title').value = '';
@@ -772,158 +736,16 @@
                 
                 showScreen('home');
                 alert('Reunião salva com sucesso!');
-            };
-        }
-        
-        function backToHome() {
-            if (isRecording) {
-                if (confirm('A gravação está em andamento. Deseja cancelar?')) {
-                    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                        mediaRecorder.stop();
-                    }
-                    isRecording = false;
-                    resetRecordingScreen();
-                    showScreen('home');
-                }
-            } else {
-                resetRecordingScreen();
-                showScreen('home');
+                
+            } catch (error) {
+                console.error('Erro ao salvar:', error);
+                alert('Erro ao salvar reunião: ' + error.message);
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Salvar Reunião';
             }
-        }
-        
-        function resetRecordingScreen() {
-            // Resetar todos os elementos da tela de gravação
-            document.getElementById('recording-mode-selector').classList.remove('hidden');
-            document.getElementById('recording-form').classList.add('hidden');
-            document.getElementById('recording-section').classList.add('hidden');
-            document.getElementById('upload-section').classList.add('hidden');
-            document.getElementById('upload-info').classList.add('hidden');
-            document.getElementById('save-upload').classList.add('hidden');
-            document.getElementById('audio-upload').value = '';
-            uploadedAudioBlob = null;
-        }
-        
-        function backToList() {
-            showScreen('home');
         }
         
         // ==================== TIMER ====================
-        function startTimer() {
-            startTime = Date.now();
-            timerInterval = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-                document.getElementById('timer').textContent = formatTimer(elapsed);
-            }, 1000);
-        }
-        
-        function stopTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            return Date.now() - startTime;
-        }
-        
-        function resetTimer() {
-            document.getElementById('timer').textContent = '00:00:00';
-        }
-        
-        // ==================== GRAVAÇÃO ====================
-        async function startRecording() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        sampleRate: 44100
-                    }
-                });
-                
-                // Configurar MediaRecorder com bitrate otimizado para voz (reduz tamanho do arquivo)
-                const options = { 
-                    mimeType: 'audio/webm;codecs=opus',
-                    audioBitsPerSecond: 64000 // 64kbps é ótimo para voz e reduz muito o tamanho
-                };
-                
-                // Fallback se o browser não suportar opus
-                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                    options.mimeType = 'audio/webm';
-                }
-                
-                mediaRecorder = new MediaRecorder(stream, options);
-                audioChunks = [];
-                
-                mediaRecorder.ondataavailable = (event) => {
-                    audioChunks.push(event.data);
-                };
-                
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    await saveRecording(audioBlob);
-                    stream.getTracks().forEach(track => track.stop());
-                };
-                
-                mediaRecorder.start();
-                isRecording = true;
-                
-                document.getElementById('start-recording').classList.add('hidden');
-                document.getElementById('stop-recording').classList.remove('hidden');
-                document.getElementById('recording-indicator').classList.remove('hidden');
-                document.getElementById('meeting-title').disabled = true;
-                document.getElementById('tag-input').disabled = true;
-                
-                startTimer();
-                
-                document.getElementById('recording-date').textContent = 
-                    `${formatDate(Date.now())} - ${formatTime(Date.now())}`;
-                
-            } catch (error) {
-                alert('Erro ao acessar o microfone. Verifique as permissões no navegador.');
-                console.error(error);
-            }
-        }
-        
-        function stopRecording() {
-            if (mediaRecorder && isRecording) {
-                mediaRecorder.stop();
-                isRecording = false;
-                stopTimer();
-            }
-        }
-        
-        async function saveRecording(audioBlob) {
-            const title = document.getElementById('meeting-title').value || 'Reunião sem título';
-            const recordingDate = new Date(startTime);
-            const duration = Date.now() - startTime;
-            
-            const reader = new FileReader();
-            reader.readAsDataURL(audioBlob);
-            reader.onloadend = async () => {
-                const audioBase64 = reader.result;
-                
-                const meeting = {
-                    title: title,
-                    date: recordingDate.toISOString(),
-                    duration: duration,
-                    audio: audioBase64,
-                    tags: selectedTags,
-                    summary: null,
-                    transcript: null
-                };
-                
-                await saveMeeting(meeting);
-                
-                document.getElementById('meeting-title').value = '';
-                document.getElementById('meeting-title').disabled = false;
-                document.getElementById('tag-input').disabled = false;
-                selectedTags = [];
-                renderSelectedTags();
-                resetTimer();
-                
-                showScreen('home');
-                alert('Reunião salva com sucesso!');
-            };
-        }
         
         // ==================== TAGS ====================
         function renderSelectedTags() {
