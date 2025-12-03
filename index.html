@@ -377,6 +377,9 @@
         <div id="recording-form" class="card hidden">
             <input type="text" id="meeting-title" class="input" placeholder="Título da reunião">
             
+            <label class="text-sm text-gray">Participantes (opcional)</label>
+            <input type="text" id="meeting-participants" class="input mb-3" placeholder="ex: Bruno, Marina, João">
+            
             <label class="text-sm text-gray">Tags (opcional)</label>
             <div id="selected-tags" class="mb-2"></div>
             <input type="text" id="tag-input" class="input" placeholder="Digite uma tag e pressione Enter">
@@ -489,18 +492,13 @@
         
         <div id="summary-content" class="hidden">
             <div class="card">
-                <h3>Resumo Geral</h3>
-                <p id="summary-general" class="text-sm"></p>
-            </div>
-            
-            <div class="card">
                 <div class="section-header">
-                    <svg class="section-icon" style="color: #eab308;" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    <svg class="section-icon" style="color: #8b5cf6;" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
                     </svg>
-                    <h3>Principais Pontos</h3>
+                    <h3>Resumo Executivo</h3>
                 </div>
-                <ul id="summary-points" class="text-sm"></ul>
+                <p id="summary-executive" class="text-sm" style="line-height: 1.6;"></p>
             </div>
             
             <div class="card">
@@ -510,7 +508,7 @@
                     </svg>
                     <h3>Decisões Tomadas</h3>
                 </div>
-                <ul id="summary-decisions" class="text-sm"></ul>
+                <div id="summary-decisions" class="text-sm"></div>
             </div>
             
             <div class="card">
@@ -521,12 +519,22 @@
                     </svg>
                     <h3>Ações e Tarefas</h3>
                 </div>
-                <ul id="summary-actions" class="text-sm"></ul>
+                <div id="summary-actions" class="text-sm"></div>
+            </div>
+            
+            <div class="card">
+                <div class="section-header">
+                    <svg class="section-icon" style="color: #eab308;" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <h3>Principais Pontos Discutidos</h3>
+                </div>
+                <div id="summary-points" class="text-sm"></div>
             </div>
             
             <div class="card">
                 <h3>Transcrição Completa</h3>
-                <p id="transcript-text" class="text-sm" style="white-space: pre-wrap;"></p>
+                <p id="transcript-text" class="text-sm" style="white-space: pre-wrap; line-height: 1.6;"></p>
             </div>
         </div>
     </div>
@@ -675,6 +683,7 @@
             // Resetar estado
             uploadedAudioBlob = null;
             document.getElementById('meeting-title').value = '';
+            document.getElementById('meeting-participants').value = '';
             document.getElementById('audio-upload').value = '';
             document.getElementById('upload-info').classList.add('hidden');
             document.getElementById('save-upload').classList.add('hidden');
@@ -802,6 +811,7 @@
                     date: new Date().toISOString(),
                     duration: duration,
                     audio: audioBase64,
+                    participants: document.getElementById('meeting-participants').value.trim(),
                     tags: selectedTags,
                     summary: null,
                     transcript: null
@@ -813,6 +823,7 @@
                 
                 // Resetar formulário
                 document.getElementById('meeting-title').value = '';
+                document.getElementById('meeting-participants').value = '';
                 document.getElementById('audio-upload').value = '';
                 document.getElementById('upload-info').classList.add('hidden');
                 document.getElementById('save-upload').classList.add('hidden');
@@ -930,6 +941,7 @@
                 document.getElementById('stop-recording').classList.remove('hidden');
                 document.getElementById('recording-indicator').classList.remove('hidden');
                 document.getElementById('meeting-title').disabled = true;
+                document.getElementById('meeting-participants').disabled = true;
                 document.getElementById('tag-input').disabled = true;
                 
                 startTimer();
@@ -966,6 +978,7 @@
                     date: recordingDate.toISOString(),
                     duration: duration,
                     audio: audioBase64,
+                    participants: document.getElementById('meeting-participants').value.trim(),
                     tags: selectedTags,
                     summary: null,
                     transcript: null
@@ -974,7 +987,9 @@
                 await saveMeeting(meeting);
                 
                 document.getElementById('meeting-title').value = '';
+                document.getElementById('meeting-participants').value = '';
                 document.getElementById('meeting-title').disabled = false;
+                document.getElementById('meeting-participants').disabled = false;
                 document.getElementById('tag-input').disabled = false;
                 selectedTags = [];
                 renderSelectedTags();
@@ -1120,14 +1135,67 @@
                 document.getElementById('generate-summary-btn').classList.add('hidden');
                 document.getElementById('summary-content').classList.remove('hidden');
                 
-                document.getElementById('summary-general').textContent = meeting.summary.general;
-                document.getElementById('summary-points').innerHTML = meeting.summary.points
-                    .map(point => `<li>• ${point}</li>`).join('');
-                document.getElementById('summary-decisions').innerHTML = meeting.summary.decisions
-                    .map(decision => `<li>• ${decision}</li>`).join('');
-                document.getElementById('summary-actions').innerHTML = meeting.summary.actions
-                    .map(action => `<li>• ${action}</li>`).join('');
-                document.getElementById('transcript-text').textContent = meeting.transcript;
+                // Resumo Executivo
+                document.getElementById('summary-executive').textContent = meeting.summary.executive_summary || meeting.summary.general || 'Resumo não disponível';
+                
+                // Decisões (novo formato)
+                if (meeting.summary.decisions && Array.isArray(meeting.summary.decisions) && typeof meeting.summary.decisions[0] === 'object') {
+                    // Novo formato
+                    document.getElementById('summary-decisions').innerHTML = meeting.summary.decisions
+                        .map(d => {
+                            if (d.decision === "Nenhuma decisão formal registrada nesta reunião") {
+                                return `<p style="opacity: 0.7; font-style: italic;">• ${d.decision}</p>`;
+                            }
+                            let html = `<div style="margin-bottom: 1rem;">
+                                <p style="font-weight: 600; margin-bottom: 0.25rem;">• ${d.decision}</p>`;
+                            if (d.context) html += `<p style="opacity: 0.7; margin-left: 1rem; font-size: 0.875rem;">Contexto: ${d.context}</p>`;
+                            if (d.impact) html += `<p style="opacity: 0.7; margin-left: 1rem; font-size: 0.875rem;">Impacto: ${d.impact}</p>`;
+                            html += `</div>`;
+                            return html;
+                        }).join('');
+                } else {
+                    // Formato antigo (compatibilidade)
+                    document.getElementById('summary-decisions').innerHTML = (meeting.summary.decisions || [])
+                        .map(decision => `<p>• ${decision}</p>`).join('');
+                }
+                
+                // Ações (novo formato)
+                if (meeting.summary.actions && Array.isArray(meeting.summary.actions) && typeof meeting.summary.actions[0] === 'object') {
+                    // Novo formato
+                    document.getElementById('summary-actions').innerHTML = meeting.summary.actions
+                        .map(a => {
+                            if (a.action === "Nenhuma ação específica definida nesta reunião") {
+                                return `<p style="opacity: 0.7; font-style: italic;">• ${a.action}</p>`;
+                            }
+                            return `<p style="margin-bottom: 0.5rem;">• ${a.action}${a.responsible ? ` - <strong>Responsável:</strong> ${a.responsible}` : ''}</p>`;
+                        }).join('');
+                } else {
+                    // Formato antigo (compatibilidade)
+                    document.getElementById('summary-actions').innerHTML = (meeting.summary.actions || [])
+                        .map(action => `<p>• ${action}</p>`).join('');
+                }
+                
+                // Principais Pontos (novo formato com categorias)
+                if (meeting.summary.key_points && typeof meeting.summary.key_points === 'object') {
+                    // Novo formato
+                    let pointsHTML = '';
+                    for (const [category, points] of Object.entries(meeting.summary.key_points)) {
+                        pointsHTML += `<div style="margin-bottom: 1rem;">
+                            <p style="font-weight: 600; color: #eab308; margin-bottom: 0.5rem;">${category}:</p>
+                            <ul style="margin-left: 1rem;">
+                                ${points.map(p => `<li style="margin-bottom: 0.25rem;">• ${p}</li>`).join('')}
+                            </ul>
+                        </div>`;
+                    }
+                    document.getElementById('summary-points').innerHTML = pointsHTML;
+                } else {
+                    // Formato antigo (compatibilidade)
+                    document.getElementById('summary-points').innerHTML = (meeting.summary.points || [])
+                        .map(point => `<li>• ${point}</li>`).join('');
+                }
+                
+                // Transcrição
+                document.getElementById('transcript-text').textContent = meeting.summary.full_transcript || meeting.transcript || 'Transcrição não disponível';
             } else {
                 document.getElementById('generate-summary-btn').classList.remove('hidden');
                 document.getElementById('summary-content').classList.add('hidden');
@@ -1425,7 +1493,11 @@
                 document.getElementById('loading-detail').textContent = 'Analisando a transcrição e criando resumo estruturado.';
                 
                 console.log('Passo 3: Gerando resumo...');
-                const summary = await generateSummaryFromTranscript(fullTranscript);
+                const summary = await generateSummaryFromTranscript(
+                    fullTranscript, 
+                    meeting.participants || '', 
+                    meeting.title || ''
+                );
                 console.log('Resumo gerado:', summary);
                 
                 meeting.transcript = fullTranscript;
@@ -1436,14 +1508,46 @@
                 document.getElementById('loading-summary').classList.add('hidden');
                 document.getElementById('summary-content').classList.remove('hidden');
                 
-                document.getElementById('summary-general').textContent = summary.general;
-                document.getElementById('summary-points').innerHTML = summary.points
-                    .map(point => `<li>• ${point}</li>`).join('');
+                // Resumo Executivo
+                document.getElementById('summary-executive').textContent = summary.executive_summary;
+                
+                // Decisões (novo formato)
                 document.getElementById('summary-decisions').innerHTML = summary.decisions
-                    .map(decision => `<li>• ${decision}</li>`).join('');
+                    .map(d => {
+                        if (d.decision === "Nenhuma decisão formal registrada nesta reunião") {
+                            return `<p style="opacity: 0.7; font-style: italic;">• ${d.decision}</p>`;
+                        }
+                        let html = `<div style="margin-bottom: 1rem;">
+                            <p style="font-weight: 600; margin-bottom: 0.25rem;">• ${d.decision}</p>`;
+                        if (d.context) html += `<p style="opacity: 0.7; margin-left: 1rem; font-size: 0.875rem;">Contexto: ${d.context}</p>`;
+                        if (d.impact) html += `<p style="opacity: 0.7; margin-left: 1rem; font-size: 0.875rem;">Impacto: ${d.impact}</p>`;
+                        html += `</div>`;
+                        return html;
+                    }).join('');
+                
+                // Ações (novo formato)
                 document.getElementById('summary-actions').innerHTML = summary.actions
-                    .map(action => `<li>• ${action}</li>`).join('');
-                document.getElementById('transcript-text').textContent = fullTranscript;
+                    .map(a => {
+                        if (a.action === "Nenhuma ação específica definida nesta reunião") {
+                            return `<p style="opacity: 0.7; font-style: italic;">• ${a.action}</p>`;
+                        }
+                        return `<p style="margin-bottom: 0.5rem;">• ${a.action}${a.responsible ? ` - <strong>Responsável:</strong> ${a.responsible}` : ''}</p>`;
+                    }).join('');
+                
+                // Principais Pontos (novo formato com categorias)
+                let pointsHTML = '';
+                for (const [category, points] of Object.entries(summary.key_points)) {
+                    pointsHTML += `<div style="margin-bottom: 1rem;">
+                        <p style="font-weight: 600; color: #eab308; margin-bottom: 0.5rem;">${category}:</p>
+                        <ul style="margin-left: 1rem;">
+                            ${points.map(p => `<li style="margin-bottom: 0.25rem;">• ${p}</li>`).join('')}
+                        </ul>
+                    </div>`;
+                }
+                document.getElementById('summary-points').innerHTML = pointsHTML;
+                
+                // Transcrição
+                document.getElementById('transcript-text').textContent = summary.full_transcript || fullTranscript;
                 
                 console.log('=== RESUMO CONCLUÍDO COM SUCESSO ===');
                 
@@ -1495,8 +1599,7 @@
                 formData.append('file', audioFile);
                 formData.append('model', 'whisper-large-v3');
                 formData.append('language', 'pt');
-                formData.append('response_format', 'verbose_json');
-                formData.append('timestamp_granularities[]', 'segment');
+                formData.append('response_format', 'text');
                 
                 // Fazer requisição para Whisper API da Groq
                 const whisperResponse = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -1513,21 +1616,7 @@
                     throw new Error(`Whisper API error ${whisperResponse.status}: ${errorData}`);
                 }
                 
-                const data = await whisperResponse.json();
-                
-                // Montar transcrição com timestamps
-                let transcript = '';
-                
-                if (data.segments && data.segments.length > 0) {
-                    data.segments.forEach((segment) => {
-                        const minutes = Math.floor(segment.start / 60);
-                        const seconds = Math.floor(segment.start % 60);
-                        transcript += `[${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}] ${segment.text.trim()}\n`;
-                    });
-                } else {
-                    // Fallback para texto simples
-                    transcript = data.text || '';
-                }
+                const transcript = await whisperResponse.text();
                 
                 if (!transcript || transcript.trim().length < 10) {
                     throw new Error('Transcrição vazia ou muito curta. Verifique se o áudio tem fala clara.');
@@ -1541,45 +1630,80 @@
             }
         }
         
-        async function generateSummaryFromTranscript(transcript) {
+        async function generateSummaryFromTranscript(transcript, participants = '', title = '') {
             const apiKey = localStorage.getItem('groq_api_key');
             
             console.log('===== INICIANDO GERAÇÃO DE RESUMO =====');
             console.log('API Key existe?', !!apiKey);
             console.log('API Key (primeiros 10 chars):', apiKey ? apiKey.substring(0, 10) + '...' : 'NENHUMA');
             console.log('Tamanho da transcrição:', transcript.length);
+            console.log('Participantes:', participants || 'não informado');
+            console.log('Título:', title || 'não informado');
             
             if (!apiKey || apiKey.length < 20) {
                 alert('API Key inválida ou não configurada!\n\nClique no ícone ⚙️ para configurar.');
                 throw new Error('API Key não configurada');
             }
             
-            // Limpar timestamps da transcrição
-            const cleanTranscript = transcript.replace(/\[\d{2}:\d{2}\]/g, '').trim();
-            console.log('Transcrição limpa (primeiros 300 chars):', cleanTranscript.substring(0, 300));
-            
-            // Limitar tamanho se muito grande
-            let transcriptToSend = cleanTranscript;
-            if (cleanTranscript.length > 7000) {
-                transcriptToSend = cleanTranscript.substring(0, 7000);
-                console.log('Transcrição truncada para 7000 caracteres');
+            // Transcrição já vem limpa (sem timestamps)
+            // Limitar tamanho se muito grande (aumentado para 15000 para resumos mais detalhados)
+            let transcriptToSend = transcript;
+            if (transcript.length > 15000) {
+                transcriptToSend = transcript.substring(0, 15000);
+                console.log('Transcrição truncada para 15000 caracteres');
             }
             
-            const systemMsg = "Você é um assistente que resume reuniões em português. Responda APENAS com JSON válido.";
-            const userMsg = `Resuma esta reunião:
+            const participantsInfo = participants ? `\n\nParticipantes: ${participants}` : '';
+            const titleInfo = title ? `\n\nTítulo da reunião: ${title}` : '';
+            
+            const systemMsg = `Você é um assistente especializado em criar resumos executivos detalhados de reuniões em português. 
+Seu objetivo é criar documentação profissional que capture toda a essência da conversa de forma estruturada e acionável.`;
 
+            const userMsg = `Crie um resumo executivo completo da seguinte reunião:${titleInfo}${participantsInfo}
+
+TRANSCRIÇÃO:
 ${transcriptToSend}
 
-Retorne JSON neste formato exato:
+Retorne um JSON com esta estrutura EXATA:
 {
-  "general": "Resumo em 2-3 frases do que foi discutido",
-  "points": ["Ponto 1", "Ponto 2", "Ponto 3"],
-  "decisions": ["Decisão 1", "Decisão 2"],
-  "actions": ["Ação 1", "Ação 2"]
+  "executive_summary": "Resumo detalhado de 150-300 palavras que capture a essência completa da conversa. Inclua: propósito e contexto da reunião, principais temas em ordem de importância, pontos-chave levantados por participantes, dinâmica emocional/tom (se relevante), principais conclusões, contexto importante. Este resumo deve contar uma história completa do que aconteceu, por que foi importante, e qual foi o resultado geral.",
+  
+  "decisions": [
+    {
+      "decision": "Decisão 1: descrição clara e específica",
+      "context": "Por que esta decisão foi tomada",
+      "impact": "Quem ou o que esta decisão afeta"
+    }
+  ],
+  
+  "actions": [
+    {
+      "action": "Ação 1: descrição clara e acionável",
+      "responsible": "Nome do responsável"
+    }
+  ],
+  
+  "key_points": {
+    "Categoria1": [
+      "Ponto importante 1",
+      "Ponto importante 2"
+    ],
+    "Categoria2": [
+      "Ponto importante 3"
+    ]
+  },
+  
+  "full_transcript": "Transcrição organizada em parágrafos naturais, indicando quem fala quando necessário. Mantenha fidelidade ao que foi dito, mas pode limpar vícios de linguagem excessivos."
 }
 
-Se não houver decisões, use: ["Nenhuma decisão específica registrada"]
-Se não houver ações, use: ["Nenhuma ação específica registrada"]`;
+INSTRUÇÕES IMPORTANTES:
+1. O RESUMO EXECUTIVO é a parte mais importante - deve ser detalhado o suficiente para dispensar a leitura da transcrição
+2. Se não houver decisões formais, use: [{"decision": "Nenhuma decisão formal registrada nesta reunião", "context": "", "impact": ""}]
+3. Se não houver ações específicas, use: [{"action": "Nenhuma ação específica definida nesta reunião", "responsible": ""}]
+4. Organize key_points em categorias temáticas (ex: Desafios, Oportunidades, Preocupações, Ideias)
+5. Use verbos de ação para actions (Agendar, Enviar, Revisar, Preparar)
+6. No resumo executivo, contextualize tudo - quem são as pessoas, qual o histórico, por que isso importa
+7. Retorne APENAS o JSON, sem markdown ou texto adicional`;
 
             try {
                 console.log('Fazendo chamada para API Groq...');
@@ -1590,8 +1714,8 @@ Se não houver ações, use: ["Nenhuma ação específica registrada"]`;
                         { role: "system", content: systemMsg },
                         { role: "user", content: userMsg }
                     ],
-                    temperature: 0.5,
-                    max_tokens: 1024
+                    temperature: 0.3,
+                    max_tokens: 4096  // Aumentado para resumos mais detalhados
                 };
                 
                 console.log('Modelo:', requestBody.model);
@@ -1657,16 +1781,17 @@ Se não houver ações, use: ["Nenhuma ação específica registrada"]`;
                     throw new Error('IA não retornou JSON válido');
                 }
                 
-                // Validar campos
-                if (!summary.general) summary.general = "Resumo não disponível";
-                if (!Array.isArray(summary.points) || summary.points.length === 0) {
-                    summary.points = ["Veja a transcrição completa"];
-                }
+                // Validar campos do novo formato
+                if (!summary.executive_summary) summary.executive_summary = "Resumo não disponível";
+                if (!summary.full_transcript) summary.full_transcript = transcript; // usa original se IA não retornou
                 if (!Array.isArray(summary.decisions) || summary.decisions.length === 0) {
-                    summary.decisions = ["Nenhuma decisão específica registrada"];
+                    summary.decisions = [{decision: "Nenhuma decisão formal registrada nesta reunião", context: "", impact: ""}];
                 }
                 if (!Array.isArray(summary.actions) || summary.actions.length === 0) {
-                    summary.actions = ["Nenhuma ação específica registrada"];
+                    summary.actions = [{action: "Nenhuma ação específica definida nesta reunião", responsible: ""}];
+                }
+                if (!summary.key_points || typeof summary.key_points !== 'object') {
+                    summary.key_points = {"Geral": ["Veja a transcrição completa"]};
                 }
                 
                 console.log('===== RESUMO GERADO COM SUCESSO =====');
@@ -1682,10 +1807,11 @@ Se não houver ações, use: ["Nenhuma ação específica registrada"]`;
                 alert('ERRO ao gerar resumo:\n\n' + error.message + '\n\nAbra o Console (F12) para ver detalhes.');
                 
                 return {
-                    general: "ERRO: " + error.message,
-                    points: ["Abra o console do navegador (F12) para ver o erro completo"],
-                    decisions: ["Erro ao processar"],
-                    actions: ["Tente novamente ou entre em contato"]
+                    executive_summary: "ERRO: " + error.message,
+                    decisions: [{decision: "Erro ao processar", context: "", impact: ""}],
+                    actions: [{action: "Abra o console (F12) para ver detalhes", responsible: ""}],
+                    key_points: {"Erro": ["Tente novamente"]},
+                    full_transcript: transcript
                 };
             }
         }
